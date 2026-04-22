@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CounterInput } from '@/components/atoms/CounterInput';
 
 describe('CounterInput component UNIT TEST', () => {
+    afterEach(() => {
+        cleanup();
+    });
+
     it('renders the component', () => {
         render(<CounterInput value={0} onChange={() => {}} />);
         expect(screen.getByLabelText('Counter value')).toBeTruthy();

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RequireAdmin, RequireAuth, RequireGuest } from '@/middlewares/authentication';
 
 const addMessageMock = vi.fn();
@@ -23,6 +23,10 @@ vi.mock('@/toolkit/react-toolkit', () => ({
 }));
 
 describe('authentication middleware', () => {
+    afterEach(() => {
+        cleanup();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         profileState.isAuth = () => false;

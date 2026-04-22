@@ -3,7 +3,6 @@
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace Cypress {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         interface Chainable {
             /**
              * Sets the isAuth cookie and mocks the refresh-token + profile endpoints so
