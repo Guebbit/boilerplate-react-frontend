@@ -1,81 +1,99 @@
+// @vitest-environment jsdom
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { RequireAdmin, RequireAuth, RequireGuest } from '@/middlewares/authentication';
 
-const refreshTokenMock = vi.fn();
-const fetchProfileMock = vi.fn();
 const addMessageMock = vi.fn();
-const profileRefs = {
-    isAuth: ref(false),
-    isAdmin: ref(false)
+const profileState = {
+    isAuth: () => false,
+    isAdmin: () => false
 };
 
 vi.mock('@/stores/profile', () => ({
-    useProfileStore: () => ({
-        refreshToken: refreshTokenMock,
-        fetchProfile: fetchProfileMock
-    })
+    useProfileStore: (selector: (state: typeof profileState) => unknown) => selector(profileState)
 }));
 
-vi.mock('pinia', () => ({
-    storeToRefs: () => profileRefs
+vi.mock('@/toolkit/react-toolkit', () => ({
+    useNotificationsStore: {
+        getState: () => ({
+            addMessage: addMessageMock
+        })
+    }
 }));
 
-vi.mock('@guebbit/vue-toolkit', () => ({
-    useNotificationsStore: () => ({
-        addMessage: addMessageMock
-    })
-}));
-
-vi.mock('@/utils/helperGenerics.ts', () => ({
-    getCookie: vi.fn(() => {})
-}));
-
-describe('authentications middleware', () => {
+describe('authentication middleware', () => {
     beforeEach(() => {
-        vi.resetModules();
         vi.clearAllMocks();
-        profileRefs.isAuth.value = false;
-        profileRefs.isAdmin.value = false;
+        profileState.isAuth = () => false;
+        profileState.isAdmin = () => false;
     });
 
-    it('redirects guest to login for auth-only route', async () => {
-        const { isAuth } = await import('@/middlewares/authentications');
-
-        const result = await isAuth(
-            { fullPath: '/en/admin', params: { locale: 'en' } } as never,
-            {} as never
+    it('redirects guest to login for auth-only route', () => {
+        render(
+            <MemoryRouter initialEntries={['/en/admin']}>
+                <Routes>
+                    <Route
+                        path="/en/admin"
+                        element={
+                            <RequireAuth>
+                                <div>Admin content</div>
+                            </RequireAuth>
+                        }
+                    />
+                    <Route path="/en/account/login" element={<div>Login page</div>} />
+                </Routes>
+            </MemoryRouter>
         );
 
-        expect(addMessageMock).toHaveBeenCalledWith('navigation.error-not-logged');
-        expect(result).toEqual(
-            expect.objectContaining({ name: 'Login', params: { locale: 'en' } })
-        );
+        expect(screen.getByText('Login page')).toBeTruthy();
+        expect(addMessageMock).toHaveBeenCalledWith('Please login first', 'warning', 2500);
     });
 
-    it('redirects authenticated user away from guest-only route', async () => {
-        const { isGuest } = await import('@/middlewares/authentications');
-        profileRefs.isAuth.value = true;
+    it('redirects authenticated user away from guest-only route', () => {
+        profileState.isAuth = () => true;
 
-        const result = await isGuest(
-            { fullPath: '/en/login', params: { locale: 'en' } } as never,
-            {} as never
+        render(
+            <MemoryRouter initialEntries={['/en/account/login']}>
+                <Routes>
+                    <Route
+                        path="/en/account/login"
+                        element={
+                            <RequireGuest>
+                                <div>Login form</div>
+                            </RequireGuest>
+                        }
+                    />
+                    <Route path="/en" element={<div>Home page</div>} />
+                </Routes>
+            </MemoryRouter>
         );
 
-        expect(addMessageMock).toHaveBeenCalledWith('navigation.error-already-logged');
-        expect(result).toEqual({ name: 'Home', params: { locale: 'en' } });
+        expect(screen.getByText('Home page')).toBeTruthy();
+        expect(addMessageMock).toHaveBeenCalledWith('You are already logged in', 'warning', 2500);
     });
 
-    it('blocks non-admin on admin middleware', async () => {
-        const { isAdmin } = await import('@/middlewares/authentications');
-        profileRefs.isAuth.value = true;
-        profileRefs.isAdmin.value = false;
+    it('blocks non-admin on admin middleware', () => {
+        profileState.isAuth = () => true;
+        profileState.isAdmin = () => false;
 
-        const result = await isAdmin(
-            { fullPath: '/en/admin', params: { locale: 'en' } } as never,
-            {} as never
+        render(
+            <MemoryRouter initialEntries={['/en/admin']}>
+                <Routes>
+                    <Route
+                        path="/en/admin"
+                        element={
+                            <RequireAdmin>
+                                <div>Admin area</div>
+                            </RequireAdmin>
+                        }
+                    />
+                    <Route path="/en" element={<div>Home page</div>} />
+                </Routes>
+            </MemoryRouter>
         );
 
-        expect(addMessageMock).toHaveBeenCalledWith('navigation.error-forbidden');
-        expect(result).toEqual({ name: 'Home', params: { locale: 'en' } });
+        expect(screen.getByText('Home page')).toBeTruthy();
+        expect(addMessageMock).toHaveBeenCalledWith('Admin access required', 'error', 2500);
     });
 });
