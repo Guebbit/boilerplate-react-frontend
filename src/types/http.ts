@@ -5,14 +5,11 @@ export interface IResponseNeutral {
 }
 
 export interface IResponseSuccess<T> extends IResponseNeutral {
-    // message: "ok"
     data?: T;
     errors: never;
 }
 
 export interface IResponseReject extends IResponseNeutral {
-    // message: Technical error name or code
     data?: never;
-    // UI friendly error message
     errors: string[];
 }

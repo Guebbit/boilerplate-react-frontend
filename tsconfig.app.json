@@ -1,22 +1,25 @@
 {
-    "extends": "@vue/tsconfig/tsconfig.dom.json",
-    "include": ["api", "src/**/*", "src/**/*.vue", ".dev/**/*.ts"],
-    "exclude": ["src/**/__tests__/*"],
     "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
         "target": "ESNext",
         "lib": ["ESNext", "DOM"],
-        "strict": true,
-        "composite": true,
-        "noEmit": true,
-        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-
+        "module": "ESNext",
         "types": ["vite/client"],
-
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "strict": true,
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
             "@types": ["./src/types"],
             "@api": ["./api/api"]
         }
-    }
+    },
+    "include": ["api", "src/**/*", ".dev/**/*.ts"],
+    "exclude": ["src/**/__tests__/*"]
 }

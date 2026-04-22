@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url';
-import { mergeConfig, defineConfig, configDefaults } from 'vitest/config';
+
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
+
 import viteConfig from './vite.config';
 
 export default mergeConfig(
@@ -7,13 +9,9 @@ export default mergeConfig(
     defineConfig({
         test: {
             environment: 'jsdom',
-            include: ['tests/unit/**/*.spec.ts'],
+            include: ['tests/unit/**/*.spec.ts', 'tests/unit/**/*.spec.tsx'],
             exclude: [...configDefaults.exclude, 'e2e/**', 'src/**/__tests__/**'],
-            server: {
-                deps: {
-                    inline: ['@guebbit/vue-toolkit']
-                }
-            },
+            setupFiles: ['./tests/unit/setup.ts'],
             root: fileURLToPath(new URL('./', import.meta.url))
         }
     })
