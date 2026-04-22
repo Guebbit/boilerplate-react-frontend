@@ -1,8 +1,9 @@
+import type { FormEvent } from 'react';
 import { BaseButton } from '@/components/atoms/BaseButton';
 import { BaseInput } from '@/components/atoms/BaseInput';
 
 export const SignupPage = () => {
-    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
     };
 

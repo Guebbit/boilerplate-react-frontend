@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { BaseButton } from '@/components/atoms/BaseButton';
@@ -8,7 +9,7 @@ export const LoginPage = () => {
     const navigate = useNavigate();
     const loginAsDemoUser = useProfileStore((state) => state.loginAsDemoUser);
 
-    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         loginAsDemoUser();
         navigate('/account/profile');

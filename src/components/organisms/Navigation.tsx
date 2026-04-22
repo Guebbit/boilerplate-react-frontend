@@ -6,10 +6,8 @@ import { useProfileStore } from '@/stores/useProfileStore';
 
 export const Navigation = () => {
     const { t } = useAppI18n();
-    const { profile, logout } = useProfileStore((state) => ({
-        profile: state.profile,
-        logout: state.logout
-    }));
+    const profile = useProfileStore((state) => state.profile);
+    const logout = useProfileStore((state) => state.logout);
 
     return (
         <nav className='navbar navbar-expand navbar-light bg-light px-3 gap-3'>

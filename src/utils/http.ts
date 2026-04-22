@@ -30,7 +30,7 @@ export const onRequestReject = (error: AxiosError) => Promise.reject(error);
 export const onResponseSuccess = (response: AxiosResponse): AxiosResponse['data'] => response.data;
 
 export const onResponseReject = (error: AxiosError<IAxiosResponseErrorData, IAxiosResponseErrorBody>) => {
-    if (error.response?.data && Object.hasOwn(error.response.data, 'errors')) return Promise.reject(error.response.data);
+    if (error.response?.data && Object.prototype.hasOwnProperty.call(error.response.data, 'errors')) return Promise.reject(error.response.data);
 
     return Promise.reject({
         success: false,

@@ -4,11 +4,9 @@ import { BaseButton } from '@/components/atoms/BaseButton';
 import { useCartStore } from '@/stores/useCartStore';
 
 export const CartPage = () => {
-    const { items, removeItem, clear } = useCartStore((state) => ({
-        items: state.items,
-        removeItem: state.removeItem,
-        clear: state.clear
-    }));
+    const items = useCartStore((state) => state.items);
+    const removeItem = useCartStore((state) => state.removeItem);
+    const clear = useCartStore((state) => state.clear);
 
     const total = useMemo(
         () => items.reduce((accumulator, item) => accumulator + item.price * item.quantity, 0),

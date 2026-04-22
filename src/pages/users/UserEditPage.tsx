@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { BaseButton } from '@/components/atoms/BaseButton';
@@ -6,7 +7,7 @@ import { BaseInput } from '@/components/atoms/BaseInput';
 export const UserEditPage = () => {
     const { id } = useParams();
 
-    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
     };
 
