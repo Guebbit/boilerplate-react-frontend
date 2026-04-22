@@ -1,6 +1,7 @@
 dist
 node_modules
 types
+api
 .dev
 docs
 *.insomnia*

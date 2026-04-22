@@ -6,6 +6,7 @@ const viteEnvironment = loadEnv('', process.cwd(), '');
 export default defineConfig({
     e2e: {
         specPattern: 'cypress/e2e/**/*.{cy,spec}.{js,jsx,ts,tsx}',
+        supportFile: 'cypress/support/e2e.ts',
         baseUrl: 'http://localhost:4173',
         env: {
             apiUrl: viteEnvironment.VITE_API_URL ?? 'http://localhost:3000'

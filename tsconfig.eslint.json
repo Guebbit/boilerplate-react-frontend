@@ -3,17 +3,17 @@
     "include": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "src/**/*.vue",
         "tests/**/*.ts",
         "tests/**/*.tsx",
-        "tests/**/*.vue",
         "cypress/**/*.ts",
+        "cypress/**/*.tsx",
         "cypress.config.ts",
         "vite.config.ts",
+        "eslint.config.ts",
         "vitest.config.ts"
     ],
     "compilerOptions": {
-        "types": ["vue", "jest", "node"],
+        "types": ["vite/client", "vitest/globals", "node", "cypress"],
         "allowJs": true
     }
 }
