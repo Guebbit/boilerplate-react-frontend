@@ -1,0 +1,22 @@
+{
+    "extends": "@vue/tsconfig/tsconfig.dom.json",
+    "include": ["api", "src/**/*", "src/**/*.vue", ".dev/**/*.ts"],
+    "exclude": ["src/**/__tests__/*"],
+    "compilerOptions": {
+        "target": "ESNext",
+        "lib": ["ESNext", "DOM"],
+        "strict": true,
+        "composite": true,
+        "noEmit": true,
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+        "types": ["vite/client"],
+
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+            "@types": ["./src/types"],
+            "@api": ["./api/api"]
+        }
+    }
+}
