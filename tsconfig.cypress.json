@@ -1,10 +1,6 @@
 {
     "extends": "./tsconfig.app.json",
-    "include": [
-        "cypress/**/*.ts",
-        "cypress/**/*.tsx",
-        "cypress.config.ts"
-    ],
+    "include": ["cypress/**/*.ts", "cypress/**/*.tsx", "cypress.config.ts"],
     "exclude": [],
     "compilerOptions": {
         "composite": true,

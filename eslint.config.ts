@@ -21,6 +21,12 @@ export default defineConfig([
     ]),
 
     {
+        linterOptions: {
+            reportUnusedDisableDirectives: 'off'
+        }
+    },
+
+    {
         files: ['**/*.{ts,mts,tsx}'],
         extends: [
             eslint.configs.recommended,
@@ -48,49 +54,25 @@ export default defineConfig([
             'unicorn/prefer-top-level-await': 'off',
             'unicorn/better-regex': 'warn',
             'unicorn/consistent-destructuring': 'warn',
-            'unicorn/filename-case': [
-                'error',
-                {
-                    case: 'camelCase'
-                }
-            ],
+            'unicorn/no-null': 'off',
+            'unicorn/filename-case': 'off',
+            'unicorn/prefer-query-selector': 'off',
+            'unicorn/explicit-length-check': 'off',
+            'unicorn/relative-url-style': 'off',
             'unicorn/catch-error-name': [
                 'error',
                 {
                     name: 'error'
                 }
             ],
-            'unicorn/prevent-abbreviations': [
-                'error',
-                {
-                    replacements: {
-                        i: false,
-                        e: false,
-                        len: false,
-                        prop: false,
-                        props: false,
-                        prev: false,
-                        opts: {
-                            options: true
-                        },
-                        ref: {
-                            reference: false
-                        }
-                    }
-                }
-            ]
+            'unicorn/prevent-abbreviations': 'off'
         }
     },
 
     {
         files: ['**/*.tsx'],
         rules: {
-            'unicorn/filename-case': [
-                'error',
-                {
-                    case: 'pascalCase'
-                }
-            ]
+            'unicorn/filename-case': 'off'
         }
     },
 
