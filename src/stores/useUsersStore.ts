@@ -31,10 +31,10 @@ type IUsersStore = {
     pageSize: number;
     pageTotal: number;
     pageItemList: User[];
-    fetchUsers: (forced?: boolean) => Promise<User[]>;
-    fetchPaginationUsers: (page?: number, pageSize?: number, forced?: boolean) => Promise<User[]>;
-    fetchSearchUsers: (filters?: IUsersFilters, page?: number, pageSize?: number, forced?: boolean) => Promise<User[]>;
-    fetchUser: (userId: string, forced?: boolean) => Promise<User>;
+    fetchUsers: () => Promise<User[]>;
+    fetchPaginationUsers: (page?: number, pageSize?: number) => Promise<User[]>;
+    fetchSearchUsers: (filters?: IUsersFilters, page?: number, pageSize?: number) => Promise<User[]>;
+    fetchUser: (userId: string) => Promise<User>;
     createUser: (userData: ICreateUserRequestMultipart) => Promise<User>;
     updateUser: (userId: string, userData?: IUpdateUserByIdRequestMultipart) => Promise<User>;
     updateUserImage: (
@@ -114,28 +114,24 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
 
     /**
      *
-     * @param forced
      */
-    const fetchUsers = (forced = false) =>
+    const fetchUsers = () =>
         withNotifiedErrors(
-            withLoading(() => {
-                void forced;
-                return restApi.fetchAll(() => usersApi.listUsers().then(({ data }) => data.items ?? [])).then((items) => {
+            withLoading(() =>
+                restApi.fetchAll(() => usersApi.listUsers().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ users: getUsersDictionary(items), usersList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                });
-            })
+                })
+            )
         );
 
     /**
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchPaginationUsers = (page = 1, pageSize = 10, forced = false) =>
+    const fetchPaginationUsers = (page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchAny(() => usersApi.listUsers(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         users: { ...get().users, ...getUsersDictionary(response.items ?? []) },
@@ -154,12 +150,10 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
      * @param filters
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchSearchUsers = (filters: IUsersFilters = {}, page = 1, pageSize = 10, forced = false) =>
+    const fetchSearchUsers = (filters: IUsersFilters = {}, page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi
                     .fetchSearch(() => usersApi.searchUsers({ ...filters, page, pageSize }).then(({ data }) => data))
                     .then((response) => {
@@ -179,12 +173,10 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
     /**
      *
      * @param userId
-     * @param forced
      */
-    const fetchUser = (userId: string, forced = false) =>
+    const fetchUser = (userId: string) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchTarget(() => usersApi.getUserById(userId).then(({ data }) => data)).then((user) => {
                     set((state) => ({
                         users: { ...state.users, [user.id]: user },

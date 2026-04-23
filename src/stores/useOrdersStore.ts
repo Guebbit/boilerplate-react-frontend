@@ -17,10 +17,10 @@ type IOrdersStore = {
     pageSize: number;
     pageTotal: number;
     pageItemList: Order[];
-    fetchOrders: (forced?: boolean) => Promise<Order[]>;
-    fetchPaginationOrders: (page?: number, pageSize?: number, forced?: boolean) => Promise<Order[]>;
-    fetchSearchOrders: (filters?: IOrdersFilters, page?: number, pageSize?: number, forced?: boolean) => Promise<Order[]>;
-    fetchOrder: (orderId: string, forced?: boolean) => Promise<Order>;
+    fetchOrders: () => Promise<Order[]>;
+    fetchPaginationOrders: (page?: number, pageSize?: number) => Promise<Order[]>;
+    fetchSearchOrders: (filters?: IOrdersFilters, page?: number, pageSize?: number) => Promise<Order[]>;
+    fetchOrder: (orderId: string) => Promise<Order>;
     createOrder: (orderData: CreateOrderRequest) => Promise<Order>;
     updateOrder: (orderId: string, orderData: UpdateOrderByIdRequest) => Promise<Order>;
     checkout: (checkoutData?: CheckoutRequest) => Promise<CheckoutResponse>;
@@ -79,28 +79,24 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
     /**
      * Fetch all orders for the authenticated user
      *
-     * @param forced
      */
-    const fetchOrders = (forced = false) =>
+    const fetchOrders = () =>
         withNotifiedErrors(
-            withLoading(() => {
-                void forced;
-                return restApi.fetchAll(() => ordersApi.listOrders().then(({ data }) => data.items ?? [])).then((items) => {
+            withLoading(() =>
+                restApi.fetchAll(() => ordersApi.listOrders().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ orders: getOrdersDictionary(items), ordersList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                });
-            })
+                })
+            )
         );
 
     /**
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchPaginationOrders = (page = 1, pageSize = 10, forced = false) =>
+    const fetchPaginationOrders = (page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchAny(() => ordersApi.listOrders(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         orders: { ...get().orders, ...getOrdersDictionary(response.items ?? []) },
@@ -119,12 +115,10 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
      * @param filters
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchSearchOrders = (filters: IOrdersFilters = {}, page = 1, pageSize = 10, forced = false) =>
+    const fetchSearchOrders = (filters: IOrdersFilters = {}, page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi
                     .fetchSearch(() => ordersApi.searchOrders({ ...filters, page, pageSize }).then(({ data }) => data))
                     .then((response) => {
@@ -145,12 +139,10 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
      * Fetch a single order by ID
      *
      * @param orderId
-     * @param forced
      */
-    const fetchOrder = (orderId: string, forced = false) =>
+    const fetchOrder = (orderId: string) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchTarget(() => ordersApi.getOrderById(orderId).then(({ data }) => data)).then((order) => {
                     set((state) => ({
                         orders: { ...state.orders, [order.id]: order },

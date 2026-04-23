@@ -18,10 +18,10 @@ type IProductsStore = {
     pageSize: number;
     pageTotal: number;
     pageItemList: Product[];
-    fetchProducts: (forced?: boolean) => Promise<Product[]>;
-    fetchPaginationProducts: (page?: number, pageSize?: number, forced?: boolean) => Promise<Product[]>;
-    fetchSearchProducts: (filters?: IProductsFilters, page?: number, pageSize?: number, forced?: boolean) => Promise<Product[]>;
-    fetchProduct: (productId: string, forced?: boolean) => Promise<Product>;
+    fetchProducts: () => Promise<Product[]>;
+    fetchPaginationProducts: (page?: number, pageSize?: number) => Promise<Product[]>;
+    fetchSearchProducts: (filters?: IProductsFilters, page?: number, pageSize?: number) => Promise<Product[]>;
+    fetchProduct: (productId: string) => Promise<Product>;
     createProduct: (productData: CreateProductRequest) => Promise<Product>;
     updateProduct: (productId: string, productData: UpdateProductByIdRequest) => Promise<Product>;
     updateProductImage: (
@@ -84,28 +84,24 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
 
     /**
      *
-     * @param forced
      */
-    const fetchProducts = (forced = false) =>
+    const fetchProducts = () =>
         withNotifiedErrors(
-            withLoading(() => {
-                void forced;
-                return restApi.fetchAll(() => productsApi.listProducts().then(({ data }) => data.items ?? [])).then((items) => {
+            withLoading(() =>
+                restApi.fetchAll(() => productsApi.listProducts().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ products: getProductsDictionary(items), productsList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                });
-            })
+                })
+            )
         );
 
     /**
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchPaginationProducts = (page = 1, pageSize = 10, forced = false) =>
+    const fetchPaginationProducts = (page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchPaginate(() => productsApi.listProducts(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         products: { ...get().products, ...getProductsDictionary(response.items ?? []) },
@@ -124,12 +120,10 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
      * @param filters
      * @param page
      * @param pageSize
-     * @param forced
      */
-    const fetchSearchProducts = (filters: IProductsFilters = {}, page = 1, pageSize = 10, forced = false) =>
+    const fetchSearchProducts = (filters: IProductsFilters = {}, page = 1, pageSize = 10) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi
                     .fetchSearch(() => productsApi.searchProducts({ ...filters, page, pageSize }).then(({ data }) => data))
                     .then((response) => {
@@ -149,12 +143,10 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
     /**
      *
      * @param productId
-     * @param forced
      */
-    const fetchProduct = (productId: string, forced = false) =>
+    const fetchProduct = (productId: string) =>
         withNotifiedErrors(
             withLoading(() => {
-                void forced;
                 return restApi.fetchTarget(() => productsApi.getProductById(productId).then(({ data }) => data)).then((product) => {
                     set((state) => ({
                         products: { ...state.products, [product.id]: product },

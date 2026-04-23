@@ -22,6 +22,7 @@ type IToolkitModule = {
     useCoreStore?: () => ICoreStore;
     useStructureRestApi?: () => IStructureRestApi;
 };
+type INotifyFunction = (message: string) => unknown;
 
 const readToolkitFunction = (name: keyof IToolkitModule) => {
     if (typeof vueToolkit !== 'object' || vueToolkit === null) return undefined;
@@ -53,8 +54,8 @@ const fallbackUseStructureRestApi = (): IStructureRestApi => ({
 });
 
 export const reactToolkitAdapter = {
-    notifySuccess: (readToolkitFunction('notifySuccess') as ((message: string) => unknown) | undefined) ?? ((message: string) => message),
-    notifyError: (readToolkitFunction('notifyError') as ((message: string) => unknown) | undefined) ?? ((message: string) => message),
+    notifySuccess: (readToolkitFunction('notifySuccess') as INotifyFunction | undefined) ?? ((message: string) => message),
+    notifyError: (readToolkitFunction('notifyError') as INotifyFunction | undefined) ?? ((message: string) => message),
     useCoreStore: (readToolkitFunction('useCoreStore') as (() => ICoreStore) | undefined) ?? (() => fallbackCoreStore),
     useStructureRestApi:
         (readToolkitFunction('useStructureRestApi') as (() => IStructureRestApi) | undefined) ?? fallbackUseStructureRestApi
