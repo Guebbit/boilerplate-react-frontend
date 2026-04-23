@@ -45,10 +45,11 @@ React + TypeScript frontend boilerplate with:
 ## Architecture overview
 
 - `/src/router`: React Router route tree
-- `/src/stores`: Zustand stores (Pinia replacement)
+- `/src/stores`: Zustand stores (Pinia replacement) for cart, profile, counter, orders, products and users
 - `/src/redux-example`: commented Redux store/slice/hooks for study
 - `/src/pages`: route-level TSX pages
 - `/src/components`: reusable TSX UI components
 - `/src/utils/http.ts`: shared axios instance and interceptors
 - `/src/utils/api.ts`: generated API class wiring
+- `/src/utils/reactToolkit.ts`: `@guebbit/vue-toolkit` compatibility facade for React migration
 - `/api`: OpenAPI-generated TypeScript axios client

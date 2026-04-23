@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export const UsersListPage = () => (
-    <section>
+    <section id='users-list-page' className='item-list-page'>
         <h1>Users</h1>
         <p>
             <Link to='/users/create'>Create user</Link>

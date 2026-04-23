@@ -1,3 +1,40 @@
+@use '../../node_modules/@guebbit/css-toolkit/index' as guebbit;
+@use 'variables' as vars;
+
+@use 'components/theme-button';
+@use 'components/theme-input';
+@use 'components/theme-select';
+@use 'components/theme-page-title';
+@use 'components/theme-card';
+@use 'components/forms';
+
 :root {
-    color-scheme: light;
+    @include guebbit.create-colors-vars(vars.$theme-colors);
+
+    --padding: 28px;
+    --transitions-time: 0.2s;
+    --nav-height: 54px;
+
+    --theme-surface: 255 255 255;
+    --theme-on-surface: var(--grey-900);
+    --theme-background: 222 222 222;
+
+    --on-secondary-600: 255 255 255 !important;
+    --select-icon: url(https://upload.wikimedia.org/wikipedia/commons/9/9d/Caret_down_font_awesome_whitevariation.svg);
+}
+
+@mixin theme-dark-builder {
+    @include guebbit.create-colors-vars(vars.$theme-colors-dark);
+}
+
+.#{vars.$css-ui-dark-theme-class} {
+    :root {
+        @include theme-dark-builder;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        @include theme-dark-builder;
+    }
 }

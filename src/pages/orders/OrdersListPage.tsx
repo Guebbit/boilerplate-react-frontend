@@ -6,7 +6,7 @@ const orders = [
 ];
 
 export const OrdersListPage = () => (
-    <section>
+    <section id='orders-list-page' className='item-list-page'>
         <h1>Orders</h1>
         <ul>
             {orders.map((order) => (

@@ -1,0 +1,25 @@
+@use 'variables' as vars;
+
+@mixin for-mobile {
+    @media (max-width: #{vars.$g-threshold-mobile}) {
+        @content;
+    }
+}
+
+@mixin for-tablet {
+    @media (min-width: #{vars.$g-threshold-mobile}) and (max-width: #{vars.$g-threshold-desktop - 1}) {
+        @content;
+    }
+}
+
+@mixin for-tablet-and-desktop {
+    @media (min-width: #{vars.$g-threshold-mobile}) {
+        @content;
+    }
+}
+
+@mixin for-desktop {
+    @media (min-width: #{vars.$g-threshold-desktop}) {
+        @content;
+    }
+}

@@ -6,7 +6,7 @@ const products = [
 ];
 
 export const ProductsListPage = () => (
-    <section>
+    <section id='products-list-page' className='item-list-page'>
         <h1>Products</h1>
         <ul>
             {products.map((product) => (
