@@ -1,6 +1,3 @@
-/*
- *
- */
 export interface IProduct {
     id: number;
     title: string;
@@ -12,13 +9,3 @@ export interface IProduct {
     createdAt: string;
     updatedAt: string;
 }
-
-/**
- * User form to edit its profile
- */
-export type IProductForm = Pick<IProduct, 'title' | 'price' | 'description' | 'imageUrl'>;
-
-/**
- *
- */
-export type IProductIdentification = IProduct['id'];

@@ -3,17 +3,15 @@
     "include": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "src/**/*.vue",
         "tests/**/*.ts",
         "tests/**/*.tsx",
-        "tests/**/*.vue",
         "cypress/**/*.ts",
         "cypress.config.ts",
         "vite.config.ts",
         "vitest.config.ts"
     ],
     "compilerOptions": {
-        "types": ["vue", "jest", "node"],
+        "types": ["node"],
         "allowJs": true
     }
 }

@@ -1,25 +1,14 @@
 import { fileURLToPath, URL } from 'node:url';
 
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import vueDevTools from 'vite-plugin-vue-devtools';
 
-// https://vite.dev/config/
 export default defineConfig({
-    plugins: [
-        vue(),
-        vueDevTools({
-            // open webstorm instead of vscode when using the __devtools__
-            launchEditor: 'webstorm'
-        })
-    ],
+    plugins: [react()],
     resolve: {
         alias: {
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             '@': fileURLToPath(new URL('src', import.meta.url)),
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             '@types': fileURLToPath(new URL('src/types', import.meta.url)),
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             '@api': fileURLToPath(new URL('api/api', import.meta.url))
         }
     },
@@ -27,7 +16,6 @@ export default defineConfig({
         preprocessorOptions: {
             scss: {
                 silenceDeprecations: ['legacy-js-api']
-                // quietDeps: true
             }
         }
     }
