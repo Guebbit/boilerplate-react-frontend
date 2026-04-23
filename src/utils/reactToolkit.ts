@@ -23,7 +23,7 @@ type IToolkitModule = {
     useStructureRestApi?: () => IStructureRestApi;
 };
 
-const readToolkitFunction = <T extends (...args: never[]) => unknown>(name: keyof IToolkitModule) => {
+const readToolkitFunction = <T extends (...args: unknown[]) => unknown>(name: keyof IToolkitModule) => {
     if (typeof vueToolkit !== 'object' || vueToolkit === null) return undefined;
     if (!(name in vueToolkit)) return undefined;
     const candidate = (vueToolkit as Record<string, unknown>)[name];
