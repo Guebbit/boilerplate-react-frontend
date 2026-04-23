@@ -5,8 +5,9 @@ export interface ITranslationDictionaries {
 }
 
 type ILocaleDictionaries = Record<string, ITranslationDictionaries>;
+const LOCALES_GLOB_PATH = '/src/locales/*.json';
 
-const localeLoaders = import.meta.glob('/src/locales/*.json');
+const localeLoaders = import.meta.glob(LOCALES_GLOB_PATH);
 
 /**
  * [on build]
@@ -28,6 +29,12 @@ let currentLocale = import.meta.env.VITE_APP_DEFAULT_LOCALE ?? 'en';
 let fallbackLocale = import.meta.env.VITE_APP_FALLBACK_LOCALE ?? 'en';
 
 const getLocaleFileKey = (locale: string) => `/src/locales/${locale}.json`;
+const applyLanguage = (locale: string) => {
+    const nextLocale = loadedLanguages.includes(locale) ? locale : loadedLanguages[0] ?? fallbackLocale ?? 'en';
+    currentLocale = nextLocale;
+    document.querySelector('html')?.setAttribute('lang', nextLocale);
+    return nextLocale;
+};
 
 const getTranslationFromDictionary = (dictionary: ITranslationDictionaries, key: string) => {
     const segments = key.split('.');
@@ -47,18 +54,18 @@ const getTranslationFromDictionary = (dictionary: ITranslationDictionaries, key:
  * @param locale
  */
 const _loadLocale = (locale: string): Promise<unknown> => {
-    if (loadedLanguages.includes(locale)) return _changeLanguage(locale);
+    if (loadedLanguages.includes(locale)) return Promise.resolve(applyLanguage(locale));
 
     const localeFile = getLocaleFileKey(locale);
     const loader = localeLoaders[localeFile];
-    if (!loader || !supportedLanguages.includes(locale)) return _changeLanguage(getDefaultLocale());
+    if (!loader || !supportedLanguages.includes(locale)) return Promise.resolve(applyLanguage(getDefaultLocale()));
 
     return loader()
         .then((file) => {
             const dictionary = ((file as { default?: ITranslationDictionaries }).default ?? file) as ITranslationDictionaries;
-            return _updateLocale(locale, dictionary).then(() => _changeLanguage(locale));
+            return _updateLocale(locale, dictionary).then(() => applyLanguage(locale));
         })
-        .catch(() => _changeLanguage(getDefaultLocale()));
+        .catch(() => applyLanguage(getDefaultLocale()));
 };
 
 /**
@@ -95,11 +102,8 @@ export const updateLocale = (locale: string, nextMessages: ITranslationDictionar
  * @param locale
  */
 const _changeLanguage = (locale: string): Promise<unknown> => {
-    if (!loadedLanguages.includes(locale)) return _loadLocale(locale);
-
-    currentLocale = locale;
-    document.querySelector('html')?.setAttribute('lang', locale);
-    return Promise.resolve(locale);
+    if (!loadedLanguages.includes(locale)) return _loadLocale(locale).then(() => applyLanguage(locale));
+    return Promise.resolve(applyLanguage(locale));
 };
 
 /**
@@ -116,7 +120,7 @@ export const getDefaultLocale = () => {
     const foundLocale = navigator.language.slice(0, 2);
     if (supportedLanguages.includes(foundLocale)) return foundLocale;
     if (loadedLanguages.includes(fallbackLocale)) return fallbackLocale;
-    return loadedLanguages[0] ?? 'en';
+    return loadedLanguages[0] ?? fallbackLocale ?? 'en';
 };
 
 /**
