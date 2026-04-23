@@ -44,48 +44,64 @@ const zodSchemaOrder = z.object({
     updatedAt: z.string().nullish().optional()
 });
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unknown error');
+
 export const useOrdersStore = create<IOrdersStore>((set, get) => {
     const { getLoading, setLoading } = getCoreStore();
     const restApi = getStructureRestApi();
 
-    const withLoading = async <T>(runner: () => Promise<T>) => {
+    /**
+     * Wrap requests with loading state handling
+     *
+     * @param runner
+     */
+    const withLoading = <T>(runner: () => Promise<T>) => {
         setLoading('orders', true);
         set({ loading: true });
-        try {
-            return await runner();
-        } finally {
+
+        return runner().finally(() => {
             setLoading('orders', false);
             set({ loading: false });
-        }
+        });
     };
 
-    return {
-        orders: {},
-        ordersList: [],
-        currentOrder: null,
-        selectedOrderId: null,
-        loading: getLoading('orders'),
-        pageCurrent: 1,
-        pageSize: 10,
-        pageTotal: 0,
-        pageItemList: [],
+    /**
+     * Notify errors but keep rejection behavior
+     *
+     * @param request
+     */
+    const withNotifiedErrors = <T>(request: Promise<T>) =>
+        request.catch((error: unknown) => {
+            notifyError(getErrorMessage(error));
+            return Promise.reject(error);
+        });
 
-        fetchOrders: async () =>
-            withLoading(async () => {
-                try {
-                    const items = await restApi.fetchAll(() => ordersApi.listOrders().then(({ data }) => data.items ?? []));
+    /**
+     * Fetch all orders for the authenticated user
+     *
+     * @param forced
+     */
+    const fetchOrders = (forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchAll(() => ordersApi.listOrders().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ orders: getOrdersDictionary(items), ordersList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchPaginationOrders: async (page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchAny(() => ordersApi.listOrders(page, pageSize).then(({ data }) => data));
+    /**
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchPaginationOrders = (page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchAny(() => ordersApi.listOrders(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         orders: { ...get().orders, ...getOrdersDictionary(response.items ?? []) },
                         ordersList: response.items ?? [],
@@ -95,53 +111,66 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
                         pageTotal: response.meta.totalItems
                     });
                     return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchSearchOrders: async (filters = {}, page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchSearch(() =>
-                        ordersApi.searchOrders({ ...filters, page, pageSize }).then(({ data }) => data)
-                    );
-                    set({
-                        orders: { ...get().orders, ...getOrdersDictionary(response.items ?? []) },
-                        ordersList: response.items ?? [],
-                        pageItemList: response.items ?? [],
-                        pageCurrent: page,
-                        pageSize,
-                        pageTotal: response.meta.totalItems
+    /**
+     * @param filters
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchSearchOrders = (filters: IOrdersFilters = {}, page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi
+                    .fetchSearch(() => ordersApi.searchOrders({ ...filters, page, pageSize }).then(({ data }) => data))
+                    .then((response) => {
+                        set({
+                            orders: { ...get().orders, ...getOrdersDictionary(response.items ?? []) },
+                            ordersList: response.items ?? [],
+                            pageItemList: response.items ?? [],
+                            pageCurrent: page,
+                            pageSize,
+                            pageTotal: response.meta.totalItems
+                        });
+                        return response.items ?? [];
                     });
-                    return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+            })
+        );
 
-        fetchOrder: async (orderId) =>
-            withLoading(async () => {
-                try {
-                    const order = await restApi.fetchTarget(() => ordersApi.getOrderById(orderId).then(({ data }) => data));
+    /**
+     * Fetch a single order by ID
+     *
+     * @param orderId
+     * @param forced
+     */
+    const fetchOrder = (orderId: string, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchTarget(() => ordersApi.getOrderById(orderId).then(({ data }) => data)).then((order) => {
                     set((state) => ({
                         orders: { ...state.orders, [order.id]: order },
                         currentOrder: order,
                         selectedOrderId: order.id
                     }));
                     return order;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        createOrder: async (orderData) =>
-            withLoading(async () => {
-                try {
-                    const order = await restApi.createTarget(() => ordersApi.createOrder(orderData).then(({ data }) => data));
+    /**
+     * Create a new order directly (admin)
+     *
+     * @param orderData
+     */
+    const createOrder = (orderData: CreateOrderRequest) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.createTarget(() => ordersApi.createOrder(orderData).then(({ data }) => data)).then((order) => {
                     set((state) => ({
                         orders: { ...state.orders, [order.id]: order },
                         ordersList: [order, ...state.ordersList],
@@ -149,48 +178,58 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
                     }));
                     notifySuccess('Order created');
                     return order;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                })
+            )
+        );
 
-        updateOrder: async (orderId, orderData) =>
-            withLoading(async () => {
-                try {
-                    const order = await restApi.updateTarget(() =>
-                        ordersApi.updateOrderById(orderId, orderData).then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        orders: { ...state.orders, [order.id]: order },
-                        ordersList: state.ordersList.map((item) => (item.id === order.id ? order : item)),
-                        pageItemList: state.pageItemList.map((item) => (item.id === order.id ? order : item)),
-                        currentOrder: state.selectedOrderId === order.id ? order : state.currentOrder
-                    }));
-                    notifySuccess('Order updated');
-                    return order;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+    /**
+     * Update an existing order by ID
+     *
+     * @param orderId
+     * @param orderData
+     */
+    const updateOrder = (orderId: string, orderData: UpdateOrderByIdRequest) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .updateTarget(() => ordersApi.updateOrderById(orderId, orderData).then(({ data }) => data))
+                    .then((order) => {
+                        set((state) => ({
+                            orders: { ...state.orders, [order.id]: order },
+                            ordersList: state.ordersList.map((item) => (item.id === order.id ? order : item)),
+                            pageItemList: state.pageItemList.map((item) => (item.id === order.id ? order : item)),
+                            currentOrder: state.selectedOrderId === order.id ? order : state.currentOrder
+                        }));
+                        notifySuccess('Order updated');
+                        return order;
+                    })
+            )
+        );
 
-        checkout: async (checkoutData) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchAny(() => ordersApi.checkout(checkoutData).then(({ data }) => data));
+    /**
+     * Convert the authenticated user's current cart into a new order
+     *
+     * @param checkoutData
+     */
+    const checkout = (checkoutData?: CheckoutRequest) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.fetchAny(() => ordersApi.checkout(checkoutData).then(({ data }) => data)).then((response) => {
                     notifySuccess('Checkout completed');
                     return response;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                })
+            )
+        );
 
-        deleteOrder: async (orderId) =>
-            withLoading(async () => {
-                try {
-                    await restApi.deleteTarget(() => ordersApi.deleteOrderById(orderId));
+    /**
+     * Delete an order by ID
+     *
+     * @param orderId
+     */
+    const deleteOrder = (orderId: string) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.deleteTarget(() => ordersApi.deleteOrderById(orderId)).then(() => {
                     set((state) => {
                         const nextOrders = { ...state.orders };
                         delete nextOrders[orderId];
@@ -203,23 +242,45 @@ export const useOrdersStore = create<IOrdersStore>((set, get) => {
                         };
                     });
                     notifySuccess('Order deleted');
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                })
+            )
+        );
 
-        getOrderInvoice: async (orderId) =>
-            withLoading(async () => {
-                try {
-                    return await restApi.fetchAny(() =>
-                        ordersApi.getOrderInvoice(orderId, { responseType: 'blob' }).then(({ data }) => data)
-                    );
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+    /**
+     * Download order invoice (PDF binary)
+     *
+     * @param orderId
+     */
+    const getOrderInvoice = (orderId: string) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.fetchAny(() =>
+                    ordersApi.getOrderInvoice(orderId, { responseType: 'blob' }).then(({ data }) => data)
+                )
+            )
+        );
+
+    return {
+        orders: {},
+        ordersList: [],
+        currentOrder: null,
+        selectedOrderId: null,
+
+        loading: getLoading('orders'),
+        pageCurrent: 1,
+        pageSize: 10,
+        pageTotal: 0,
+        pageItemList: [],
+
+        fetchOrders,
+        fetchPaginationOrders,
+        fetchSearchOrders,
+        fetchOrder,
+        createOrder,
+        updateOrder,
+        checkout,
+        deleteOrder,
+        getOrderInvoice,
 
         zodSchemaOrderStatus,
         zodSchemaOrder

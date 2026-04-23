@@ -80,48 +80,63 @@ const zodSchemaUsers = z.object({
     updatedAt: z.string().nullish().optional()
 });
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unknown error');
+
 export const useUsersStore = create<IUsersStore>((set, get) => {
     const { getLoading, setLoading } = getCoreStore();
     const restApi = getStructureRestApi();
 
-    const withLoading = async <T>(runner: () => Promise<T>) => {
+    /**
+     * Wrap requests with loading state handling
+     *
+     * @param runner
+     */
+    const withLoading = <T>(runner: () => Promise<T>) => {
         setLoading('users', true);
         set({ loading: true });
-        try {
-            return await runner();
-        } finally {
+
+        return runner().finally(() => {
             setLoading('users', false);
             set({ loading: false });
-        }
+        });
     };
 
-    return {
-        users: {},
-        usersList: [],
-        currentUser: null,
-        selectedUserId: null,
-        loading: getLoading('users'),
-        pageCurrent: 1,
-        pageSize: 10,
-        pageTotal: 0,
-        pageItemList: [],
+    /**
+     * Notify errors but keep rejection behavior
+     *
+     * @param request
+     */
+    const withNotifiedErrors = <T>(request: Promise<T>) =>
+        request.catch((error: unknown) => {
+            notifyError(getErrorMessage(error));
+            return Promise.reject(error);
+        });
 
-        fetchUsers: async () =>
-            withLoading(async () => {
-                try {
-                    const items = await restApi.fetchAll(() => usersApi.listUsers().then(({ data }) => data.items ?? []));
+    /**
+     *
+     * @param forced
+     */
+    const fetchUsers = (forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchAll(() => usersApi.listUsers().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ users: getUsersDictionary(items), usersList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchPaginationUsers: async (page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchAny(() => usersApi.listUsers(page, pageSize).then(({ data }) => data));
+    /**
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchPaginationUsers = (page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchAny(() => usersApi.listUsers(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         users: { ...get().users, ...getUsersDictionary(response.items ?? []) },
                         usersList: response.items ?? [],
@@ -131,53 +146,65 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
                         pageTotal: response.meta.totalItems
                     });
                     return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchSearchUsers: async (filters = {}, page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchSearch(() =>
-                        usersApi.searchUsers({ ...filters, page, pageSize }).then(({ data }) => data)
-                    );
-                    set({
-                        users: { ...get().users, ...getUsersDictionary(response.items ?? []) },
-                        usersList: response.items ?? [],
-                        pageItemList: response.items ?? [],
-                        pageCurrent: page,
-                        pageSize,
-                        pageTotal: response.meta.totalItems
+    /**
+     * @param filters
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchSearchUsers = (filters: IUsersFilters = {}, page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi
+                    .fetchSearch(() => usersApi.searchUsers({ ...filters, page, pageSize }).then(({ data }) => data))
+                    .then((response) => {
+                        set({
+                            users: { ...get().users, ...getUsersDictionary(response.items ?? []) },
+                            usersList: response.items ?? [],
+                            pageItemList: response.items ?? [],
+                            pageCurrent: page,
+                            pageSize,
+                            pageTotal: response.meta.totalItems
+                        });
+                        return response.items ?? [];
                     });
-                    return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+            })
+        );
 
-        fetchUser: async (userId) =>
-            withLoading(async () => {
-                try {
-                    const user = await restApi.fetchTarget(() => usersApi.getUserById(userId).then(({ data }) => data));
+    /**
+     *
+     * @param userId
+     * @param forced
+     */
+    const fetchUser = (userId: string, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchTarget(() => usersApi.getUserById(userId).then(({ data }) => data)).then((user) => {
                     set((state) => ({
                         users: { ...state.users, [user.id]: user },
                         currentUser: user,
                         selectedUserId: user.id
                     }));
                     return user;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        createUser: async (userData) =>
-            withLoading(async () => {
-                try {
-                    const user = await restApi.createTarget(() =>
+    /**
+     *
+     * @param userData
+     */
+    const createUser = (userData: ICreateUserRequestMultipart) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .createTarget(() =>
                         usersApi
                             .createUser(
                                 userData.email,
@@ -188,49 +215,67 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
                                 userData.imageUpload
                             )
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        users: { ...state.users, [user.id]: user },
-                        usersList: [user, ...state.usersList],
-                        pageItemList: [user, ...state.pageItemList]
-                    }));
-                    notifySuccess('User created');
-                    return user;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((user) => {
+                        set((state) => ({
+                            users: { ...state.users, [user.id]: user },
+                            usersList: [user, ...state.usersList],
+                            pageItemList: [user, ...state.pageItemList]
+                        }));
+                        notifySuccess('User created');
+                        return user;
+                    })
+            )
+        );
 
-        updateUserImage: async (userId, files = [], onUploadProgress) =>
-            withLoading(async () => {
-                if (files.length === 0 || !files[0]) throw new Error('Image file is required for user image update');
-                try {
-                    const user = await restApi.updateTarget(() =>
+    /**
+     * Change user image via the generated API
+     *
+     * @param userId
+     * @param files
+     * @param onUploadProgress
+     */
+    const updateUserImage = (
+        userId: string,
+        files: File[] | FileList = [],
+        onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
+    ) => {
+        if (files.length === 0 || !files[0]) return Promise.reject(new Error('Image file is required for user image update'));
+
+        return withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .updateTarget(() =>
                         usersApi
                             .updateUserById(userId, undefined, undefined, undefined, files[0], {
                                 onUploadProgress
                             })
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        users: { ...state.users, [user.id]: user },
-                        usersList: state.usersList.map((item) => (item.id === user.id ? user : item)),
-                        pageItemList: state.pageItemList.map((item) => (item.id === user.id ? user : item)),
-                        currentUser: state.selectedUserId === user.id ? user : state.currentUser
-                    }));
-                    notifySuccess('User image updated');
-                    return user;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((user) => {
+                        set((state) => ({
+                            users: { ...state.users, [user.id]: user },
+                            usersList: state.usersList.map((item) => (item.id === user.id ? user : item)),
+                            pageItemList: state.pageItemList.map((item) => (item.id === user.id ? user : item)),
+                            currentUser: state.selectedUserId === user.id ? user : state.currentUser
+                        }));
+                        notifySuccess('User image updated');
+                        return user;
+                    })
+            )
+        );
+    };
 
-        updateUser: async (userId, userData = {}) =>
-            withLoading(async () => {
-                try {
-                    const user = await restApi.updateTarget(() =>
+    /**
+     *
+     * @param userId
+     * @param userData
+     */
+    const updateUser = (userId: string, userData: IUpdateUserByIdRequestMultipart = {}) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .updateTarget(() =>
                         usersApi
                             .updateUserById(
                                 userId,
@@ -240,25 +285,28 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
                                 userData.imageUpload
                             )
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        users: { ...state.users, [user.id]: user },
-                        usersList: state.usersList.map((item) => (item.id === user.id ? user : item)),
-                        pageItemList: state.pageItemList.map((item) => (item.id === user.id ? user : item)),
-                        currentUser: state.selectedUserId === user.id ? user : state.currentUser
-                    }));
-                    notifySuccess('User updated');
-                    return user;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((user) => {
+                        set((state) => ({
+                            users: { ...state.users, [user.id]: user },
+                            usersList: state.usersList.map((item) => (item.id === user.id ? user : item)),
+                            pageItemList: state.pageItemList.map((item) => (item.id === user.id ? user : item)),
+                            currentUser: state.selectedUserId === user.id ? user : state.currentUser
+                        }));
+                        notifySuccess('User updated');
+                        return user;
+                    })
+            )
+        );
 
-        deleteUser: async (userId) =>
-            withLoading(async () => {
-                try {
-                    await restApi.deleteTarget(() => usersApi.deleteUserById(userId));
+    /**
+     *
+     * @param userId
+     */
+    const deleteUser = (userId: string) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.deleteTarget(() => usersApi.deleteUserById(userId)).then(() => {
                     set((state) => {
                         const nextUsers = { ...state.users };
                         delete nextUsers[userId];
@@ -271,11 +319,30 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
                         };
                     });
                     notifySuccess('User deleted');
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                })
+            )
+        );
+
+    return {
+        users: {},
+        usersList: [],
+        currentUser: null,
+        selectedUserId: null,
+
+        loading: getLoading('users'),
+        pageCurrent: 1,
+        pageSize: 10,
+        pageTotal: 0,
+        pageItemList: [],
+
+        fetchUsers,
+        fetchPaginationUsers,
+        fetchSearchUsers,
+        fetchUser,
+        createUser,
+        updateUser,
+        updateUserImage,
+        deleteUser,
 
         zodSchemaUsersEmail,
         zodSchemaUsersUsername,

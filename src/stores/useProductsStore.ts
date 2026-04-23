@@ -50,52 +50,63 @@ const zodSchemaProducts = z.object({
     updatedAt: z.string().nullish().optional()
 });
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unknown error');
+
 export const useProductsStore = create<IProductsStore>((set, get) => {
     const { getLoading, setLoading } = getCoreStore();
     const restApi = getStructureRestApi();
 
-    const withLoading = async <T>(runner: () => Promise<T>) => {
+    /**
+     * Wrap requests with loading state handling
+     *
+     * @param runner
+     */
+    const withLoading = <T>(runner: () => Promise<T>) => {
         setLoading('products', true);
         set({ loading: true });
-        try {
-            return await runner();
-        } finally {
+
+        return runner().finally(() => {
             setLoading('products', false);
             set({ loading: false });
-        }
+        });
     };
 
-    return {
-        products: {},
-        productsList: [],
-        currentProduct: null,
-        selectedProductId: null,
-        loading: getLoading('products'),
-        pageCurrent: 1,
-        pageSize: 10,
-        pageTotal: 0,
-        pageItemList: [],
+    /**
+     * Notify errors but keep rejection behavior
+     *
+     * @param request
+     */
+    const withNotifiedErrors = <T>(request: Promise<T>) =>
+        request.catch((error: unknown) => {
+            notifyError(getErrorMessage(error));
+            return Promise.reject(error);
+        });
 
-        fetchProducts: async () =>
-            withLoading(async () => {
-                try {
-                    const items = await restApi.fetchAll(() =>
-                        productsApi.listProducts().then(({ data }) => data.items ?? [])
-                    );
+    /**
+     *
+     * @param forced
+     */
+    const fetchProducts = (forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchAll(() => productsApi.listProducts().then(({ data }) => data.items ?? [])).then((items) => {
                     set({ products: getProductsDictionary(items), productsList: items, pageItemList: items, pageTotal: items.length });
                     return items;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchPaginationProducts: async (page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchPaginate(() =>
-                        productsApi.listProducts(page, pageSize).then(({ data }) => data)
-                    );
+    /**
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchPaginationProducts = (page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchPaginate(() => productsApi.listProducts(page, pageSize).then(({ data }) => data)).then((response) => {
                     set({
                         products: { ...get().products, ...getProductsDictionary(response.items ?? []) },
                         productsList: response.items ?? [],
@@ -105,55 +116,66 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
                         pageTotal: response.meta.totalItems
                     });
                     return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        fetchSearchProducts: async (filters = {}, page = 1, pageSize = 10) =>
-            withLoading(async () => {
-                try {
-                    const response = await restApi.fetchSearch(() =>
-                        productsApi.searchProducts({ ...filters, page, pageSize }).then(({ data }) => data)
-                    );
-                    set({
-                        products: { ...get().products, ...getProductsDictionary(response.items ?? []) },
-                        productsList: response.items ?? [],
-                        pageItemList: response.items ?? [],
-                        pageCurrent: page,
-                        pageSize,
-                        pageTotal: response.meta.totalItems
+    /**
+     * @param filters
+     * @param page
+     * @param pageSize
+     * @param forced
+     */
+    const fetchSearchProducts = (filters: IProductsFilters = {}, page = 1, pageSize = 10, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi
+                    .fetchSearch(() => productsApi.searchProducts({ ...filters, page, pageSize }).then(({ data }) => data))
+                    .then((response) => {
+                        set({
+                            products: { ...get().products, ...getProductsDictionary(response.items ?? []) },
+                            productsList: response.items ?? [],
+                            pageItemList: response.items ?? [],
+                            pageCurrent: page,
+                            pageSize,
+                            pageTotal: response.meta.totalItems
+                        });
+                        return response.items ?? [];
                     });
-                    return response.items ?? [];
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+            })
+        );
 
-        fetchProduct: async (productId) =>
-            withLoading(async () => {
-                try {
-                    const product = await restApi.fetchTarget(() =>
-                        productsApi.getProductById(productId).then(({ data }) => data)
-                    );
+    /**
+     *
+     * @param productId
+     * @param forced
+     */
+    const fetchProduct = (productId: string, forced = false) =>
+        withNotifiedErrors(
+            withLoading(() => {
+                void forced;
+                return restApi.fetchTarget(() => productsApi.getProductById(productId).then(({ data }) => data)).then((product) => {
                     set((state) => ({
                         products: { ...state.products, [product.id]: product },
                         currentProduct: product,
                         selectedProductId: product.id
                     }));
                     return product;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                });
+            })
+        );
 
-        createProduct: async (productData) =>
-            withLoading(async () => {
-                try {
-                    const product = await restApi.createTarget(() =>
+    /**
+     * Create a new product.
+     *
+     * @param productData
+     */
+    const createProduct = (productData: CreateProductRequest) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .createTarget(() =>
                         productsApi
                             .createProduct(
                                 productData.title,
@@ -162,25 +184,37 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
                                 productData.active
                             )
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        products: { ...state.products, [product.id]: product },
-                        productsList: [product, ...state.productsList],
-                        pageItemList: [product, ...state.pageItemList]
-                    }));
-                    notifySuccess('Product created');
-                    return product;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((product) => {
+                        set((state) => ({
+                            products: { ...state.products, [product.id]: product },
+                            productsList: [product, ...state.productsList],
+                            pageItemList: [product, ...state.pageItemList]
+                        }));
+                        notifySuccess('Product created');
+                        return product;
+                    })
+            )
+        );
 
-        updateProductImage: async (product, files = [], onUploadProgress) =>
-            withLoading(async () => {
-                if (files.length === 0 || !files[0]) throw new Error('Image file is required for product image update');
-                try {
-                    const updated = await restApi.updateTarget(() =>
+    /**
+     * Change product image via multipart upload.
+     *
+     * @param product
+     * @param files
+     * @param onUploadProgress
+     */
+    const updateProductImage = (
+        product: Product,
+        files: File[] | FileList = [],
+        onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
+    ) => {
+        if (files.length === 0 || !files[0]) return Promise.reject(new Error('Image file is required for product image update'));
+
+        return withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .updateTarget(() =>
                         productsApi
                             .updateProductById(
                                 product.id,
@@ -192,25 +226,32 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
                                 { onUploadProgress }
                             )
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        products: { ...state.products, [updated.id]: updated },
-                        productsList: state.productsList.map((item) => (item.id === updated.id ? updated : item)),
-                        pageItemList: state.pageItemList.map((item) => (item.id === updated.id ? updated : item)),
-                        currentProduct: state.selectedProductId === updated.id ? updated : state.currentProduct
-                    }));
-                    notifySuccess('Product image updated');
-                    return updated;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((updated) => {
+                        set((state) => ({
+                            products: { ...state.products, [updated.id]: updated },
+                            productsList: state.productsList.map((item) => (item.id === updated.id ? updated : item)),
+                            pageItemList: state.pageItemList.map((item) => (item.id === updated.id ? updated : item)),
+                            currentProduct: state.selectedProductId === updated.id ? updated : state.currentProduct
+                        }));
+                        notifySuccess('Product image updated');
+                        return updated;
+                    })
+            )
+        );
+    };
 
-        updateProduct: async (productId, productData) =>
-            withLoading(async () => {
-                try {
-                    const product = await restApi.updateTarget(() =>
+    /**
+     * Update an existing product by ID.
+     *
+     * @param productId
+     * @param productData
+     */
+    const updateProduct = (productId: string, productData: UpdateProductByIdRequest) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi
+                    .updateTarget(() =>
                         productsApi
                             .updateProductById(
                                 productId,
@@ -220,25 +261,29 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
                                 productData.active
                             )
                             .then(({ data }) => data)
-                    );
-                    set((state) => ({
-                        products: { ...state.products, [product.id]: product },
-                        productsList: state.productsList.map((item) => (item.id === product.id ? product : item)),
-                        pageItemList: state.pageItemList.map((item) => (item.id === product.id ? product : item)),
-                        currentProduct: state.selectedProductId === product.id ? product : state.currentProduct
-                    }));
-                    notifySuccess('Product updated');
-                    return product;
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                    )
+                    .then((product) => {
+                        set((state) => ({
+                            products: { ...state.products, [product.id]: product },
+                            productsList: state.productsList.map((item) => (item.id === product.id ? product : item)),
+                            pageItemList: state.pageItemList.map((item) => (item.id === product.id ? product : item)),
+                            currentProduct: state.selectedProductId === product.id ? product : state.currentProduct
+                        }));
+                        notifySuccess('Product updated');
+                        return product;
+                    })
+            )
+        );
 
-        deleteProduct: async (productId) =>
-            withLoading(async () => {
-                try {
-                    await restApi.deleteTarget(() => productsApi.deleteProductById(productId));
+    /**
+     * Delete a product by ID.
+     *
+     * @param productId
+     */
+    const deleteProduct = (productId: string) =>
+        withNotifiedErrors(
+            withLoading(() =>
+                restApi.deleteTarget(() => productsApi.deleteProductById(productId)).then(() => {
                     set((state) => {
                         const nextProducts = { ...state.products };
                         delete nextProducts[productId];
@@ -251,11 +296,30 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
                         };
                     });
                     notifySuccess('Product deleted');
-                } catch (error) {
-                    notifyError((error as Error).message);
-                    throw error;
-                }
-            }),
+                })
+            )
+        );
+
+    return {
+        products: {},
+        productsList: [],
+        currentProduct: null,
+        selectedProductId: null,
+
+        loading: getLoading('products'),
+        pageCurrent: 1,
+        pageSize: 10,
+        pageTotal: 0,
+        pageItemList: [],
+
+        fetchProducts,
+        fetchPaginationProducts,
+        fetchSearchProducts,
+        fetchProduct,
+        createProduct,
+        updateProduct,
+        updateProductImage,
+        deleteProduct,
 
         zodSchemaProductsTitle,
         zodSchemaProductsPrice,
