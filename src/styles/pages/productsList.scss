@@ -1,12 +1,12 @@
 @use 'itemList';
 
 #products-list-page {
-    .users-table-wrapper {
+    .products-table-wrapper {
         overflow-x: auto;
         margin-bottom: 16px;
     }
 
-    .users-table {
+    .products-table {
         width: 100%;
         border-collapse: collapse;
 
