@@ -178,7 +178,7 @@ export const useProductsStore = create<IProductsStore>((set, get) => {
 
         updateProductImage: async (product, files = [], onUploadProgress) =>
             withLoading(async () => {
-                if (files.length === 0 || !files[0]) throw new Error('No file selected');
+                if (files.length === 0 || !files[0]) throw new Error('Image file is required for product image update');
                 try {
                     const updated = await restApi.updateTarget(() =>
                         productsApi

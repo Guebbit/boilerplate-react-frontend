@@ -204,7 +204,7 @@ export const useUsersStore = create<IUsersStore>((set, get) => {
 
         updateUserImage: async (userId, files = [], onUploadProgress) =>
             withLoading(async () => {
-                if (files.length === 0 || !files[0]) throw new Error('No file selected');
+                if (files.length === 0 || !files[0]) throw new Error('Image file is required for user image update');
                 try {
                     const user = await restApi.updateTarget(() =>
                         usersApi
