@@ -32,9 +32,6 @@ type IOrdersStore = {
 
 const getOrdersDictionary = (items: Order[]) => Object.fromEntries(items.map((item) => [item.id, item]));
 
-const { getLoading, setLoading } = getCoreStore();
-const restApi = getStructureRestApi();
-
 const zodSchemaOrderStatus = z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']);
 const zodSchemaOrder = z.object({
     id: z.string().nullish().optional(),
@@ -48,6 +45,9 @@ const zodSchemaOrder = z.object({
 });
 
 export const useOrdersStore = create<IOrdersStore>((set, get) => {
+    const { getLoading, setLoading } = getCoreStore();
+    const restApi = getStructureRestApi();
+
     const withLoading = async <T>(runner: () => Promise<T>) => {
         setLoading('orders', true);
         set({ loading: true });

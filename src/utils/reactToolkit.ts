@@ -23,7 +23,12 @@ type IToolkitModule = {
     useStructureRestApi?: () => IStructureRestApi;
 };
 
-const toolkit = vueToolkit as IToolkitModule;
+const readToolkitFunction = <T extends (...args: never[]) => unknown>(name: keyof IToolkitModule) => {
+    if (typeof vueToolkit !== 'object' || vueToolkit === null) return undefined;
+    if (!(name in vueToolkit)) return undefined;
+    const candidate = (vueToolkit as Record<string, unknown>)[name];
+    return typeof candidate === 'function' ? (candidate as T) : undefined;
+};
 
 const loadingState = new Map<string, boolean>();
 
@@ -48,10 +53,10 @@ const fallbackUseStructureRestApi = (): IStructureRestApi => ({
 });
 
 export const reactToolkitAdapter = {
-    notifySuccess: toolkit.notifySuccess ?? ((message: string) => message),
-    notifyError: toolkit.notifyError ?? ((message: string) => message),
-    useCoreStore: toolkit.useCoreStore ?? (() => fallbackCoreStore),
-    useStructureRestApi: toolkit.useStructureRestApi ?? fallbackUseStructureRestApi
+    notifySuccess: readToolkitFunction<(message: string) => unknown>('notifySuccess') ?? ((message: string) => message),
+    notifyError: readToolkitFunction<(message: string) => unknown>('notifyError') ?? ((message: string) => message),
+    useCoreStore: readToolkitFunction<() => ICoreStore>('useCoreStore') ?? (() => fallbackCoreStore),
+    useStructureRestApi: readToolkitFunction<() => IStructureRestApi>('useStructureRestApi') ?? fallbackUseStructureRestApi
 };
 
 export const { notifySuccess, notifyError, useCoreStore, useStructureRestApi } = reactToolkitAdapter;

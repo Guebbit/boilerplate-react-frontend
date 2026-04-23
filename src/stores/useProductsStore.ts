@@ -37,9 +37,6 @@ type IProductsStore = {
 
 const getProductsDictionary = (items: Product[]) => Object.fromEntries(items.map((item) => [item.id, item]));
 
-const { getLoading, setLoading } = getCoreStore();
-const restApi = getStructureRestApi();
-
 const zodSchemaProductsTitle = z.string().min(1, 'Title is required');
 const zodSchemaProductsPrice = z.number().min(0, 'Price must be greater than or equal to 0');
 const zodSchemaProducts = z.object({
@@ -54,6 +51,9 @@ const zodSchemaProducts = z.object({
 });
 
 export const useProductsStore = create<IProductsStore>((set, get) => {
+    const { getLoading, setLoading } = getCoreStore();
+    const restApi = getStructureRestApi();
+
     const withLoading = async <T>(runner: () => Promise<T>) => {
         setLoading('products', true);
         set({ loading: true });

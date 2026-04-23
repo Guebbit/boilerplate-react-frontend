@@ -51,9 +51,6 @@ type IUsersStore = {
 
 const getUsersDictionary = (items: User[]) => Object.fromEntries(items.map((item) => [item.id, item]));
 
-const { getLoading, setLoading } = getCoreStore();
-const restApi = getStructureRestApi();
-
 const zodSchemaUsersEmail = z.string().email('Invalid email');
 const zodSchemaUsersUsername = z.string().min(3, 'Username should have at least 3 characters');
 const zodSchemaUsersPassword = z
@@ -84,6 +81,9 @@ const zodSchemaUsers = z.object({
 });
 
 export const useUsersStore = create<IUsersStore>((set, get) => {
+    const { getLoading, setLoading } = getCoreStore();
+    const restApi = getStructureRestApi();
+
     const withLoading = async <T>(runner: () => Promise<T>) => {
         setLoading('users', true);
         set({ loading: true });
