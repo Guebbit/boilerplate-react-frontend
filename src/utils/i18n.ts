@@ -32,7 +32,7 @@ const getLocaleFileKey = (locale: string) => `/src/locales/${locale}.json`;
 const applyLanguage = (locale: string) => {
     const nextLocale = loadedLanguages.includes(locale) ? locale : loadedLanguages[0] ?? fallbackLocale ?? 'en';
     currentLocale = nextLocale;
-    document.querySelector('html')?.setAttribute('lang', nextLocale);
+    if (typeof document !== 'undefined') document.querySelector('html')?.setAttribute('lang', nextLocale);
     return nextLocale;
 };
 
@@ -117,7 +117,7 @@ export const changeLanguage = (locale: string) => _changeLanguage(locale);
  * Get user locale, fallback if not available
  */
 export const getDefaultLocale = () => {
-    const foundLocale = navigator.language.slice(0, 2);
+    const foundLocale = typeof navigator !== 'undefined' ? navigator.language.slice(0, 2) : '';
     if (supportedLanguages.includes(foundLocale)) return foundLocale;
     if (loadedLanguages.includes(fallbackLocale)) return fallbackLocale;
     return loadedLanguages[0] ?? fallbackLocale ?? 'en';
