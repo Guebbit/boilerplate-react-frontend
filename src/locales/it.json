@@ -1,0 +1,17 @@
+{
+    "navigation": {
+        "home": "Home",
+        "products": "Prodotti",
+        "orders": "Ordini",
+        "users": "Utenti",
+        "cart": "Carrello",
+        "admin": "Admin",
+        "login": "Accedi",
+        "signup": "Registrati",
+        "logout": "Esci"
+    },
+    "home": {
+        "title": "Boilerplate React",
+        "subtitle": "Migrato dal boilerplate Vue originale"
+    }
+}

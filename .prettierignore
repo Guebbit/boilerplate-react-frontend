@@ -1,0 +1,7 @@
+dist
+node_modules
+types
+.dev
+docs
+*.insomnia*
+Insomnia_*.json

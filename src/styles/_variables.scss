@@ -1,0 +1,20 @@
+@use '../../node_modules/@guebbit/css-toolkit/index' as guebbit;
+
+$primary-color: #ff9800 !default;
+$secondary-color: #00bcd4 !default;
+$primary-color--dark: #00bcd4 !default;
+$secondary-color--dark: #ff9800 !default;
+
+$theme-colors: (
+    'primary': guebbit.create-collection($primary-color),
+    'secondary': guebbit.create-collection($secondary-color)
+);
+
+$theme-colors-dark: (
+    'primary': guebbit.create-collection($primary-color--dark),
+    'secondary': guebbit.create-collection($secondary-color--dark)
+);
+
+$css-ui-dark-theme-class: 'theme--dark' !default;
+$g-threshold-mobile: 670px !default;
+$g-threshold-desktop: 1920px !default;

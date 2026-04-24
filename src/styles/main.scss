@@ -1,0 +1,121 @@
+@use '../../node_modules/@guebbit/css-toolkit/index' as guebbit;
+
+@use 'pages/itemList';
+@use 'pages/ordersList';
+@use 'pages/productsList';
+@use 'pages/usersList';
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    background: rgb(var(--theme-surface));
+    color: rgb(var(--theme-on-surface));
+    margin: 0;
+    min-height: 100vh;
+    transition:
+        color var(--transitions-time, 0.2s),
+        background-color var(--transitions-time, 0.2s);
+    font-family: Roboto, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+    text-decoration: none;
+    color: rgb(var(--primary-500));
+    transition:
+        color var(--transitions-time, 0.2s),
+        background-color var(--transitions-time, 0.2s);
+
+    &:hover {
+        color: rgb(var(--primary-700));
+    }
+}
+
+.page-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: var(--nav-height);
+
+    nav {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.page-content {
+    overflow: hidden;
+    margin-top: var(--nav-height);
+
+    .page-container {
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    &.full-page {
+        min-height: calc(100vh - var(--nav-height));
+    }
+
+    &.centered {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+}
+
+:root {
+    @include guebbit.create-colors-vars(guebbit.$colors-collection);
+}
+
+@include guebbit.create-colors(guebbit.$colors-collection);
+@include guebbit.create-class('text-align', ('right', 'left', 'center'), true);
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.gap-1 {
+    gap: 0.25rem;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-3 {
+    gap: 1rem;
+}
+
+.py-3 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.ms-auto {
+    margin-left: auto;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}

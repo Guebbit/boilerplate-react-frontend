@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.app.json",
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "cypress/**/*.ts",
+        "cypress.config.ts",
+        "vite.config.ts",
+        "vitest.config.ts"
+    ],
+    "compilerOptions": {
+        "types": ["node"],
+        "allowJs": true
+    }
+}
